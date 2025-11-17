@@ -29,8 +29,8 @@
     {
       "source": "/stockfish/(.*\\.wasm)",
       "headers": [
-        { "key": "Content-Encoding", "value": "identity" },
-        { "key": "Content-Type", "value": "application/wasm" }
+        { "key": "Content-Type", "value": "application/wasm" },
+        { "key": "Cross-Origin-Resource-Policy", "value": "same-origin" }
       ]
     }
   ]
