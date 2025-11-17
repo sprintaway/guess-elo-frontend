@@ -18,6 +18,13 @@
           "value": "public, max-age=31536000, immutable"
         }
       ]
+    },
+    {
+      "source": "/stockfish/(.*\\.wasm)",
+      "headers": [
+        { "key": "Content-Encoding", "value": "identity" },
+        { "key": "Content-Type", "value": "application/wasm" }
+      ]
     }
   ]
 }
