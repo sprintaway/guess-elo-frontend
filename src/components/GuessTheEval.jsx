@@ -357,6 +357,11 @@ export default function GuessTheEval({ onBack }) {
     if (!stockfishEngine) {
       const engine = new Worker('/stockfish/stockfish-17.1-8e4d048.js');
       
+      engine.postMessage({
+        type: 'wasmURL',
+        url: '/stockfish/'
+      });
+      
       engine.onmessage = (event) => {
         const message = event.data;
         
