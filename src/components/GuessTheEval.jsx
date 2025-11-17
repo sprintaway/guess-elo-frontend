@@ -357,43 +357,13 @@ export default function GuessTheEval({ onBack }) {
     if (!stockfishEngine) {
       const engine = new Worker('/stockfish/stockfish-17.1-8e4d048.js');
       
-      engine.postMessage({
-        type: 'wasmURL',
-        url: '/stockfish/'
-      });
-      
       engine.onmessage = (event) => {
-        const message = event.data;
-        
-        // Parse evaluation from Stockfish output
-        if (message.includes('info') && message.includes('score')) {
-          const cpMatch = message.match(/score cp (-?\d+)/);
-          const mateMatch = message.match(/score mate (-?\d+)/);
-          
-          if (cpMatch) {
-            const centipawns = parseInt(cpMatch[1]);
-            let evalInPawns = centipawns / 100;
-          
-            // Store RAW evaluation (always from White's perspective)
-            setStockfishRawEval(evalInPawns);
-          } else if (mateMatch) {
-            const mateIn = parseInt(mateMatch[1]);
-            let evalValue = mateIn > 0 ? 10.0 : -10.0;
-            
-            // Flip evaluation if Black to move
-            setStockfishRawEval(evalValue);
-          }
-        }
-        
-        // Parse best move
-        if (message.includes('bestmove')) {
-          const moveMatch = message.match(/bestmove ([a-h][1-8][a-h][1-8][qrbn]?)/);
-          if (moveMatch) {
-            setBestMove(moveMatch[1]);
-          }
-          setStockfishLoading(false);
-        }
+        console.log('STOCKFISH:', event.data);
       };
+
+      // tell Stockfish where wasm files are
+      engine.postMessage({ type: 'wasmURL', url: '/stockfish/' });
+      engine.postMessage('uci');
       
       setStockfishEngine(engine);
     }
