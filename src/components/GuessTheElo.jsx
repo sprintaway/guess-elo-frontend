@@ -9,6 +9,7 @@ import { FinalResultsScreen } from './Results';
 import { MultiplayerLobby } from './MultiplayerLobby';
 import { RoomSetup } from './RoomSetup';
 import { Leaderboard } from './Leaderboard';
+import { MultiplayerChat } from './MultiplayerChat';
 
 // WebSocket connection
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
@@ -38,9 +39,11 @@ export default function GuessTheElo() {
   const [isHost, setIsHost] = useState(false);
   const [roomPlayers, setRoomPlayers] = useState([]);
   
+  
   // WebSocket ref
   const socketRef = useRef(null);
   const timerRef = useRef(null);
+  const timerSoundRef = useRef(new Audio('/sounds/mixkit-alarm-tone-996.wav'));
   
   const chessGameRef = useRef(new Chess());
   const chessGame = chessGameRef.current;
@@ -245,6 +248,16 @@ export default function GuessTheElo() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [gameState, isAutoPlaying, currentMoveIndex, moves]);
 
+
+  useEffect(() => {
+    if (gameMode === 'multiplayer' && !showAnswer && timeRemaining === 20) {
+      // Play sound every second when under 20 seconds
+      timerSoundRef.current.currentTime = 0;
+      timerSoundRef.current.volume = 0.5; // Adjust volume (0.0 to 1.0)
+      timerSoundRef.current.play().catch(err => console.log('Audio play failed:', err));
+    }
+  }, [timeRemaining, showAnswer, gameMode]);
+
   const parseMoves = (movesString) => {
     let cleaned = movesString.replace(/\{[^}]*\}/g, '').replace(/\[[^\]]*\]/g, '');
     cleaned = cleaned.replace(/\s*(1-0|0-1|1\/2-1\/2)\s*$/g, '');
@@ -354,7 +367,7 @@ export default function GuessTheElo() {
       setPreloadedGames(data.games);
       setTotalGames(numGames);
       setRoundDuration(data.roundDuration);
-      setRoomPlayers(data.players || [playerName]);  // UPDATE: Set initial players
+      setRoomPlayers(data.players || [playerName]);
       
       // Join the WebSocket room
       if (socketRef.current) {
@@ -391,7 +404,7 @@ export default function GuessTheElo() {
       setPreloadedGames(data.games);
       setTotalGames(data.numGames);
       setRoundDuration(data.roundDuration);
-      setRoomPlayers(data.players || []);  // UPDATE: Set initial players
+      setRoomPlayers(data.players || []);
       setScores([]);
       
       // Join the WebSocket room
@@ -591,7 +604,7 @@ export default function GuessTheElo() {
     setPlayerName('');
     setPreloadedGames([]);
     setLeaderboard([]);
-    setRoomPlayers([]);  // NEW: Clear room players
+    setRoomPlayers([]);
     setIsHost(false);
     chessGame.reset();
     setChessPosition(chessGame.fen());
@@ -629,7 +642,7 @@ export default function GuessTheElo() {
   
   // State routing
   if (gameState === 'title') {
-    return <StartScreen onSelectMode={selectMode} />;
+    return <StartScreen onSelectMode={selectMode} gameType="elo" />;
   }
 
   if (gameState === 'lobby') {
@@ -656,8 +669,8 @@ export default function GuessTheElo() {
         roomCode={roomCode}
         playerName={playerName}
         isHost={isHost}
-        socket={socketRef.current}           // NEW: Pass socket
-        initialPlayers={roomPlayers}         // NEW: Pass initial players
+        socket={socketRef.current}
+        initialPlayers={roomPlayers}
         onStartGame={startMultiplayerGame}
       />
     );
@@ -667,128 +680,153 @@ export default function GuessTheElo() {
 
   if (gameState === 'playing' && currentGame) {
     return (
-      <div className="min-h-screen bg-slate-800 p-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-8">
-            <h1 className="text-5xl font-bold text-emerald-400 mb-3">GUESS THE ELO</h1>
-            <p className="text-2xl text-gray-300">
-              Game {currentGameNum} of {totalGames}
-              {gameMode === 'multiplayer' && roomCode && (
-                <span className="ml-4 text-blue-400">Room: {roomCode}</span>
-              )}
-            </p>
-            {gameMode === 'multiplayer' && !showAnswer && (
-              <div className="mt-4">
-                <div className={`inline-block px-6 py-3 rounded-xl text-2xl font-bold ${
-                  timeRemaining <= 10 ? 'bg-red-600 animate-pulse' : 'bg-slate-700'
+      <div className="h-screen bg-slate-800 p-2 flex flex-col">
+        <div className="max-w-[1800px] mx-auto h-full w-full">
+          {/* Header - Responsive */}
+          <div className="text-center mb-2 sm:mb-4 md:mb-8">
+            <div className="flex items-center justify-center gap-4">
+              {gameMode === 'multiplayer' && !showAnswer && (
+                <div className={`px-3 py-1 sm:px-4 sm:py-2 md:px-6 md:py-3 rounded-lg md:rounded-xl text-base sm:text-xl md:text-2xl font-bold ${
+                  timeRemaining <= 20 ? 'bg-red-600 animate-pulse' : 'bg-slate-700 text-gray-300'
                 }`}>
-                  ⏱️ Time Remaining: {formatTime(timeRemaining)}
+                  ⏱️ {formatTime(timeRemaining)}
                 </div>
-              </div>
-            )}
+              )}
+              <p className="text-sm sm:text-lg md:text-2xl text-gray-300">
+                Game {currentGameNum} of {totalGames}
+                {gameMode === 'multiplayer' && roomCode && (
+                  <span className="ml-2 text-blue-300 text-sm sm:text-lg md:text-2xl">
+                    Room: {roomCode}
+                  </span>
+                )}
+              </p>
+            </div>
           </div>
 
-          <div className="grid lg:grid-cols-2 gap-10">
-            <div className="flex flex-col">
-              <div className="bg-slate-700 p-6 rounded-xl mb-6">
-                <div className="flex justify-between items-center mb-3">
-                  <span className="text-white font-bold text-xl">{currentGame?.game.White}</span>
-                  <span className="text-gray-400 text-lg">vs</span>
-                  <span className="text-white font-bold text-xl">{currentGame?.game.Black}</span>
+          {/* Main Content - Three Column Layout */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-2 sm:gap-4 md:gap-6">
+            {/* Left Column - Chess Board */}
+            <div className="flex flex-col order-2 lg:order-1">
+              {/* Game Info Card - Mobile Compact */}
+              <div className="bg-slate-700 p-2 sm:p-4 md:p-6 rounded-lg md:rounded-xl mb-2 sm:mb-4 md:mb-6">
+                <div className="flex justify-between items-center mb-1 sm:mb-2 md:mb-3">
+                  <span className="text-white font-bold text-xs sm:text-base md:text-xl truncate">
+                    {currentGame?.game.White}
+                  </span>
+                  <span className="text-gray-400 text-xs sm:text-sm md:text-lg mx-2">vs</span>
+                  <span className="text-white font-bold text-xs sm:text-base md:text-xl truncate">
+                    {currentGame?.game.Black}
+                  </span>
                 </div>
-                <div className="text-base text-gray-300 space-y-1">
-                  <p>Result: {currentGame?.game.Result}</p>
-                  <p>Opening: {currentGame?.game.Opening}</p>
-                  <p>Time Control: {currentGame?.game.TimeControl}</p>
+                <div className="text-xs sm:text-sm md:text-base text-gray-300 space-y-0.5 sm:space-y-1">
+                  <p className="truncate">Result: {currentGame?.game.Result}</p>
+                  <p className="truncate">Opening: {currentGame?.game.Opening}</p>
+                  <p>Time: {currentGame?.game.TimeControl}</p>
                 </div>
               </div>
-              <ChessBoardDisplay
-                position={chessPosition}
-                moves={moves}
-                currentMoveIndex={currentMoveIndex}
-                onNavigate={handleNavigation}
-              />
+
+              {/* Chess Board - Responsive Size */}
+              <div className="w-full">
+                <ChessBoardDisplay
+                  position={chessPosition}
+                  moves={moves}
+                  currentMoveIndex={currentMoveIndex}
+                  onNavigate={handleNavigation}
+                />
+              </div>
             </div>
 
-            <div className="flex flex-col justify-center">
+            {/* Middle Column - Guess/Results */}
+            <div className="flex flex-col justify-start order-1 lg:order-2">
+              {/* Leaderboard - Mobile Compact */}
               {gameMode === 'multiplayer' && leaderboard.length > 0 && (
-                <Leaderboard leaderboard={leaderboard} currentPlayer={playerName} />
+                <div className="mb-2">
+                  <Leaderboard leaderboard={leaderboard} currentPlayer={playerName} />
+                </div>
               )}
 
               {!showAnswer ? (
-                <div className="bg-slate-700 p-10 rounded-xl">
-                  <h3 className="text-3xl font-bold text-emerald-400 mb-6">
+                // Guess Input - Mobile Optimized
+                <div className="bg-slate-700 p-3 sm:p-6 md:p-10 rounded-lg md:rounded-xl">
+                  <h3 className="text-xl sm:text-2xl md:text-3xl font-bold text-emerald-400 mb-2 sm:mb-4 md:mb-6">
                     What's the average Elo?
                   </h3>
-                  <p className="text-gray-300 mb-6 text-lg">
-                    Watch the game and estimate the average rating of both players
+                  <p className="text-gray-300 mb-3 sm:mb-4 md:mb-6 text-xs sm:text-sm md:text-lg">
+                    Watch the game and estimate the average rating
                   </p>
                   <input
                     type="number"
                     value={guess}
                     onChange={(e) => setGuess(e.target.value)}
                     placeholder="Enter Elo (e.g., 2500)"
-                    className="w-full px-6 py-4 text-2xl bg-slate-600 text-white rounded-xl mb-6 focus:outline-none focus:ring-4 focus:ring-emerald-500"
+                    className="w-full px-3 py-2 sm:px-4 sm:py-3 md:px-6 md:py-4 text-base sm:text-xl md:text-2xl bg-slate-600 text-white rounded-lg md:rounded-xl mb-3 sm:mb-4 md:mb-6 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                     onKeyPress={(e) => e.key === 'Enter' && submitGuess()}
                     disabled={hasSubmitted}
                   />
                   <button
                     onClick={submitGuess}
                     disabled={hasSubmitted}
-                    className={`w-full px-8 py-4 text-2xl font-bold rounded-xl shadow-xl transform transition ${
+                    className={`w-full px-4 py-2 sm:px-6 sm:py-3 md:px-8 md:py-4 text-base sm:text-xl md:text-2xl font-bold rounded-lg md:rounded-xl shadow-xl transform transition ${
                       hasSubmitted 
                         ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
                         : 'bg-emerald-500 hover:bg-emerald-600 text-white hover:scale-105'
                     }`}
                   >
-                    {hasSubmitted ? 'Submitted - Waiting for others...' : 'Submit Guess'}
+                    {hasSubmitted ? 'Submitted ✓' : 'Submit Guess'}
                   </button>
                   {gameMode === 'multiplayer' && hasSubmitted && (
-                    <p className="text-center text-gray-400 mt-4">
-                      Waiting for other players or timer to end...
+                    <p className="text-center text-gray-400 mt-2 text-xs sm:text-sm">
+                      Waiting for others...
                     </p>
                   )}
                 </div>
               ) : (
-                <div className="bg-slate-700 p-10 rounded-xl">
-                  <h3 className="text-3xl font-bold text-emerald-400 mb-6">Results</h3>
-                  <div className="space-y-4 text-lg text-gray-300 mb-8">
-                    <div className="bg-slate-600 p-4 rounded-xl">
-                      <p className="text-sm text-gray-400 mb-1">White</p>
-                      <p className="text-xl">
+                // Results - Mobile Optimized
+                <div className="bg-slate-700 p-3 sm:p-6 md:p-10 rounded-lg md:rounded-xl">
+                  <h3 className="text-2xl font-bold text-emerald-400 mb-4">
+                    Results
+                  </h3>
+                  <div className="space-y-2 sm:space-y-3 md:space-y-4 text-sm sm:text-base md:text-lg text-gray-300 mb-4 sm:mb-6 md:mb-8">
+                    <div className="bg-slate-600 p-2 sm:p-3 md:p-4 rounded-lg md:rounded-xl">
+                      {/* <p className="text-xs text-gray-400 mb-1">White</p> */}
+                      <p className="text-sm sm:text-base md:text-xl">
                         <span className="text-white font-bold">{currentGame?.game.White}</span>: {currentGame?.whiteElo}
                       </p>
                     </div>
-                    <div className="bg-slate-600 p-4 rounded-xl">
-                      <p className="text-sm text-gray-400 mb-1">Black</p>
-                      <p className="text-xl">
+                    <div className="bg-slate-600 p-2 sm:p-3 md:p-4 rounded-lg md:rounded-xl">
+                      {/* <p className="text-xs text-gray-400 mb-1">Black</p> */}
+                      <p className="text-sm sm:text-base md:text-xl">
                         <span className="text-white font-bold">{currentGame?.game.Black}</span>: {currentGame?.blackElo}
                       </p>
                     </div>
-                    <div className="bg-emerald-900 p-4 rounded-xl">
-                      <p className="text-2xl text-emerald-400 font-bold">
+                    <div className="bg-emerald-900 p-2 sm:p-3 md:p-4 rounded-lg md:rounded-xl">
+                      <p className="text-base sm:text-xl md:text-2xl text-emerald-400 font-bold">
                         Average Elo: {Math.round(currentGame?.averageElo)}
                       </p>
                     </div>
                     {scores.length > 0 && scores[scores.length - 1].gameNum === currentGameNum && (
                       <>
-                        <div className="bg-slate-600 p-4 rounded-xl">
-                          <p className="text-xl">Your guess: <span className="font-bold">{scores[scores.length - 1].guessedElo}</span></p>
-                          <p className="text-xl">Difference: <span className="font-bold">{scores[scores.length - 1].difference}</span></p>
+                        <div className="bg-slate-600 p-2 sm:p-3 md:p-4 rounded-lg md:rounded-xl">
+                          <p className="text-sm sm:text-base md:text-xl">
+                            Your guess: <span className="font-bold">{scores[scores.length - 1].guessedElo}</span>
+                          </p>
+                          <p className="text-sm sm:text-base md:text-xl">
+                            Difference: <span className="font-bold">{scores[scores.length - 1].difference}</span>
+                          </p>
                         </div>
-                        <div className="bg-emerald-800 p-5 rounded-xl">
-                          <p className="text-3xl text-emerald-300 font-bold">
+                        <div className="bg-emerald-800 p-3 sm:p-4 md:p-5 rounded-lg md:rounded-xl">
+                          <p className="text-xl sm:text-2xl md:text-3xl text-emerald-300 font-bold">
                             Score: +{scores[scores.length - 1].score}
                           </p>
                         </div>
                       </>
                     )}
                     {!scores.find(s => s.gameNum === currentGameNum) && (
-                      <div className="bg-red-900 p-5 rounded-xl">
-                        <p className="text-xl text-red-300">
+                      <div className="bg-red-900 p-3 sm:p-4 md:p-5 rounded-lg md:rounded-xl">
+                        <p className="text-sm sm:text-base md:text-xl text-red-300">
                           Time's up! No guess submitted.
                         </p>
-                        <p className="text-3xl text-red-300 font-bold mt-2">
+                        <p className="text-xl sm:text-2xl md:text-3xl text-red-300 font-bold mt-2">
                           Score: 0
                         </p>
                       </div>
@@ -796,13 +834,24 @@ export default function GuessTheElo() {
                   </div>
                   <button
                     onClick={nextGame}
-                    className="w-full px-8 py-4 bg-emerald-500 hover:bg-emerald-600 text-white text-2xl font-bold rounded-xl shadow-xl transform transition hover:scale-105"
+                    className="w-full px-4 py-2 sm:px-6 sm:py-3 md:px-8 md:py-4 bg-emerald-500 hover:bg-emerald-600 text-white text-base sm:text-xl md:text-2xl font-bold rounded-lg md:rounded-xl shadow-xl transform transition hover:scale-105"
                   >
                     {currentGameNum < totalGames ? 'Next Game →' : 'See Final Score'}
                   </button>
                 </div>
               )}
             </div>
+
+            {/* Right Column - Chat */}
+            {gameMode === 'multiplayer' && (
+              <div className="flex flex-col order-3 lg:order-3">
+                <MultiplayerChat 
+                  roomCode={roomCode}
+                  playerName={playerName}
+                  socket={socketRef.current}
+                />
+              </div>
+            )}
           </div>
         </div>
       </div>

@@ -10,11 +10,13 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@vercel/analytics": "^1.5.0",
     "chess.js": "^1.4.0",
     "react": "^19.1.1",
     "react-chessboard": "^3.0.1",
     "react-dom": "^19.1.1",
-    "socket.io-client": "^4.8.1"
+    "socket.io-client": "^4.8.1",
+    "stockfish": "^17.1.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.36.0",

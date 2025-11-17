@@ -1,8 +1,41 @@
-export function FinalResultsScreen({ scores, onRestart, isMultiplayer = false, leaderboard = null, playerName = null }) {
+export function FinalResultsScreen({ scores, onRestart, isMultiplayer = false, leaderboard = null, playerName = null, gameType = "elo" }) {
   const totalScore = scores.reduce((sum, s) => sum + s.score, 0);
   const avgDifference = scores.length > 0 
     ? scores.reduce((sum, s) => sum + (s.difference || 0), 0) / scores.length 
     : 0;
+  
+  // Format average difference based on game type
+  const formatAvgDifference = () => {
+    if (gameType === "eval") {
+      return avgDifference.toFixed(2);
+    }
+    return Math.round(avgDifference);
+  };
+
+  // Check if player submitted a guess for this game
+  const hasGuess = (score) => {
+    if (gameType === "eval") {
+      return score.guessedEval !== undefined && score.guessedEval !== null;
+    }
+    return score.guessedElo !== undefined && score.guessedElo !== null;
+  };
+
+  // Format the guess details
+  const formatGuessDetails = (score) => {
+    if (gameType === "eval") {
+      const formatEval = (val) => val > 0 ? `+${val.toFixed(2)}` : val.toFixed(2);
+      return (
+        <p>
+          Actual: {formatEval(score.actualEval)} | Your Guess: {formatEval(score.guessedEval)} | Diff: {score.difference.toFixed(2)}
+        </p>
+      );
+    }
+    return (
+      <p>
+        Actual: {Math.round(score.actualElo)} | Your Guess: {score.guessedElo} | Diff: {score.difference}
+      </p>
+    );
+  };
   
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 p-8">
@@ -48,7 +81,7 @@ export function FinalResultsScreen({ scores, onRestart, isMultiplayer = false, l
             </div>
             <div className="bg-slate-600 p-4 rounded-xl text-center">
               <p className="text-gray-400 mb-1">Avg Difference</p>
-              <p className="text-3xl font-bold text-white">{Math.round(avgDifference)}</p>
+              <p className="text-3xl font-bold text-white">{formatAvgDifference()}</p>
             </div>
           </div>
         </div>
@@ -59,12 +92,14 @@ export function FinalResultsScreen({ scores, onRestart, isMultiplayer = false, l
             {scores.map((score, index) => (
               <div key={index} className="bg-slate-600 p-4 rounded-xl">
                 <div className="flex justify-between items-center mb-2">
-                  <span className="text-lg text-white font-semibold">Game {score.gameNum || index + 1}</span>
+                  <span className="text-lg text-white font-semibold">
+                    {gameType === "eval" ? "Position" : "Game"} {score.gameNum || index + 1}
+                  </span>
                   <span className="text-xl font-bold text-emerald-400">+{score.score}</span>
                 </div>
                 <div className="text-sm text-gray-300">
-                  {score.guessedElo ? (
-                    <p>Actual: {Math.round(score.actualElo)} | Your Guess: {score.guessedElo} | Diff: {score.difference}</p>
+                  {hasGuess(score) ? (
+                    formatGuessDetails(score)
                   ) : (
                     <p className="text-red-400">No guess submitted (Time's up)</p>
                   )}
