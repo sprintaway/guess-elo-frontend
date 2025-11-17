@@ -356,14 +356,10 @@ export default function GuessTheEval({ onBack }) {
     // Initialize Stockfish engine once
     if (!stockfishEngine) {
       const engine = new Worker('/stockfish/stockfish-17.1-8e4d048.js');
-      
-      engine.onmessage = (event) => {
-        console.log('STOCKFISH:', event.data);
-      };
 
-      // tell Stockfish where wasm files are
-      engine.postMessage({ type: 'wasmURL', url: '/stockfish/' });
-      engine.postMessage('uci');
+      engine.onmessage = (event) => {
+        console.log('Worker message:', event.data); // catch everything
+      };
       
       setStockfishEngine(engine);
     }
