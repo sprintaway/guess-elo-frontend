@@ -355,12 +355,7 @@ export default function GuessTheEval({ onBack }) {
   useEffect(() => {
     // Initialize Stockfish engine once
     if (!stockfishEngine) {
-      const engine = new Worker('/stockfish/stockfish-17.1-8e4d048.js');
-      
-      engine.postMessage({
-        type: 'wasmURL',
-        url: '/stockfish/'
-      });
+      const engine = new Worker('/stockfish/stockfish-17.1-single-a496a04.js');
       
       engine.onmessage = (event) => {
         const message = event.data;
