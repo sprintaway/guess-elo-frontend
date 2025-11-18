@@ -355,12 +355,7 @@ export default function GuessTheEval({ onBack }) {
   useEffect(() => {
     // Initialize Stockfish engine once
     if (!stockfishEngine) {
-      const engine = new Worker('/stockfish/stockfish-17.1-8e4d048.js');
-      
-      engine.postMessage({
-        'cmd': 'setWasmLocation',
-        'location': '/stockfish/'
-      });
+      const engine = new Worker('/stockfish-wrapper.js');
 
       engine.onmessage = (event) => {
         const message = event.data;
@@ -392,10 +387,12 @@ export default function GuessTheEval({ onBack }) {
             setBestMove(moveMatch[1]);
           }
           setStockfishLoading(false);
+          console.log('Analysis complete');
         }
       };
       
       setStockfishEngine(engine);
+      console.log('Stockfish initialized from CDN');
     }
     
     return () => {
