@@ -355,7 +355,9 @@ export default function GuessTheEval({ onBack }) {
   useEffect(() => {
     // Initialize Stockfish engine once
     if (!stockfishEngine) {
-      const engine = new Worker('/stockfish/stockfish-17.1-8e4d048.js');
+      const engine = new Worker(
+        'https://raw.githubusercontent.com/sprintaway/guess-elo-frontend/master/public/stockfish/stockfish-17.1-8e4d048.js'
+      );
 
       engine.onmessage = (event) => {
         const message = event.data;
