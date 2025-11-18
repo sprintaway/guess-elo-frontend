@@ -352,121 +352,121 @@ export default function GuessTheEval({ onBack }) {
     }
   }, [gameState, currentGameNum, preloadedPositions, gameMode]);
 
-  useEffect(() => {
-    // Initialize Stockfish engine once
-    if (!stockfishEngine) {
+  // useEffect(() => {
+  //   // Initialize Stockfish engine once
+  //   if (!stockfishEngine) {
       
-      const engine = new Worker('https://cdn.jsdelivr.net/npm/stockfish@16.0.0/src/stockfish-nnue-16-single.js');
+  //     const engine = new Worker('/stockfish/stockfish-17.1-8e4d048.js');
 
-      engine.onmessage = (event) => {
-        const message = event.data;
+  //     engine.onmessage = (event) => {
+  //       const message = event.data;
         
-        // Parse evaluation from Stockfish output
-        if (message.includes('info') && message.includes('score')) {
-          const cpMatch = message.match(/score cp (-?\d+)/);
-          const mateMatch = message.match(/score mate (-?\d+)/);
+  //       // Parse evaluation from Stockfish output
+  //       if (message.includes('info') && message.includes('score')) {
+  //         const cpMatch = message.match(/score cp (-?\d+)/);
+  //         const mateMatch = message.match(/score mate (-?\d+)/);
           
-          if (cpMatch) {
-            const centipawns = parseInt(cpMatch[1]);
-            let evalInPawns = centipawns / 100;
+  //         if (cpMatch) {
+  //           const centipawns = parseInt(cpMatch[1]);
+  //           let evalInPawns = centipawns / 100;
           
-            // Store RAW evaluation (always from White's perspective)
-            setStockfishRawEval(evalInPawns);
-          } else if (mateMatch) {
-            const mateIn = parseInt(mateMatch[1]);
-            let evalValue = mateIn > 0 ? 10.0 : -10.0;
+  //           // Store RAW evaluation (always from White's perspective)
+  //           setStockfishRawEval(evalInPawns);
+  //         } else if (mateMatch) {
+  //           const mateIn = parseInt(mateMatch[1]);
+  //           let evalValue = mateIn > 0 ? 10.0 : -10.0;
             
-            // Flip evaluation if Black to move
-            setStockfishRawEval(evalValue);
-          }
-        }
+  //           // Flip evaluation if Black to move
+  //           setStockfishRawEval(evalValue);
+  //         }
+  //       }
         
-        // Parse best move
-        if (message.includes('bestmove')) {
-          const moveMatch = message.match(/bestmove ([a-h][1-8][a-h][1-8][qrbn]?)/);
-          if (moveMatch) {
-            setBestMove(moveMatch[1]);
-          }
-          setStockfishLoading(false);
-          console.log('Analysis complete');
-        }
-      };
+  //       // Parse best move
+  //       if (message.includes('bestmove')) {
+  //         const moveMatch = message.match(/bestmove ([a-h][1-8][a-h][1-8][qrbn]?)/);
+  //         if (moveMatch) {
+  //           setBestMove(moveMatch[1]);
+  //         }
+  //         setStockfishLoading(false);
+  //         console.log('Analysis complete');
+  //       }
+  //     };
       
-      setStockfishEngine(engine);
-      console.log('Stockfish initialized from CDN');
-    }
+  //     setStockfishEngine(engine);
+  //     console.log('Stockfish initialized from CDN');
+  //   }
     
-    return () => {
-      if (stockfishEngine) {
-        stockfishEngine.terminate();
-      }
-    };
-  }, []);
+  //   return () => {
+  //     if (stockfishEngine) {
+  //       stockfishEngine.terminate();
+  //     }
+  //   };
+  // }, []);
 
-  useEffect(() => {
-    if (showAnswer && currentPosition && stockfishEngine) {
-      analyzePosition(currentPosition.fen);
-    }
-  }, [showAnswer, currentPosition, stockfishEngine]);
+  // useEffect(() => {
+  //   if (showAnswer && currentPosition && stockfishEngine) {
+  //     analyzePosition(currentPosition.fen);
+  //   }
+  // }, [showAnswer, currentPosition, stockfishEngine]);
 
-  const analyzePosition = (fen) => {
-    if (!stockfishEngine) return;
+  // const analyzePosition = (fen) => {
+  //   if (!stockfishEngine) return;
     
-    setStockfishLoading(true);
-    setStockfishEval(null);
-    setBestMove(null);
+  //   setStockfishLoading(true);
+  //   setStockfishEval(null);
+  //   setBestMove(null);
     
-    // Send commands to Stockfish
-    stockfishEngine.postMessage('uci');
-    stockfishEngine.postMessage('ucinewgame');
-    stockfishEngine.postMessage(`position fen ${fen}`);
-    stockfishEngine.postMessage('go depth 20'); // Analyze to depth 20
-  };
+  //   // Send commands to Stockfish
+  //   stockfishEngine.postMessage('uci');
+  //   stockfishEngine.postMessage('ucinewgame');
+  //   stockfishEngine.postMessage(`position fen ${fen}`);
+  //   stockfishEngine.postMessage('go depth 20'); // Analyze to depth 20
+  // };
 
-  const getAdjustedStockfishEval = () => {
-    if (stockfishRawEval === null) return null;
+  // const getAdjustedStockfishEval = () => {
+  //   if (stockfishRawEval === null) return null;
     
-    // Stockfish always evaluates from White's perspective
-    // If Black to move, flip it to match the database format
-    if (sideToMove === 'Black') {
-      return -stockfishRawEval;
-    }
+  //   // Stockfish always evaluates from White's perspective
+  //   // If Black to move, flip it to match the database format
+  //   if (sideToMove === 'Black') {
+  //     return -stockfishRawEval;
+  //   }
     
-    return stockfishRawEval;
-  };
+  //   return stockfishRawEval;
+  // };
 
-  const uciToSAN = (uciMove, fen) => {
-    if (!uciMove) return null;
+  // const uciToSAN = (uciMove, fen) => {
+  //   if (!uciMove) return null;
     
-    try {
-      // Create a temporary chess instance with the current position
-      const tempChess = new Chess(fen);
+  //   try {
+  //     // Create a temporary chess instance with the current position
+  //     const tempChess = new Chess(fen);
       
-      // Extract from/to squares from UCI format (e.g., "e2e4" -> from: "e2", to: "e4")
-      const from = uciMove.substring(0, 2);
-      const to = uciMove.substring(2, 4);
-      const promotion = uciMove.length > 4 ? uciMove[4] : undefined;
+  //     // Extract from/to squares from UCI format (e.g., "e2e4" -> from: "e2", to: "e4")
+  //     const from = uciMove.substring(0, 2);
+  //     const to = uciMove.substring(2, 4);
+  //     const promotion = uciMove.length > 4 ? uciMove[4] : undefined;
       
-      // Make the move and get SAN notation
-      const move = tempChess.move({
-        from: from,
-        to: to,
-        promotion: promotion
-      });
+  //     // Make the move and get SAN notation
+  //     const move = tempChess.move({
+  //       from: from,
+  //       to: to,
+  //       promotion: promotion
+  //     });
       
-      return move ? move.san : uciMove; // Fallback to UCI if conversion fails
-    } catch (error) {
-      console.error('Error converting UCI to SAN:', error);
-      return uciMove; // Return UCI format as fallback
-    }
-  };
+  //     return move ? move.san : uciMove; // Fallback to UCI if conversion fails
+  //   } catch (error) {
+  //     console.error('Error converting UCI to SAN:', error);
+  //     return uciMove; // Return UCI format as fallback
+  //   }
+  // };
 
-  const formatStockfishEval = (evalValue) => {
-    if (evalValue === null) return '...';
-    if (evalValue >= 10) return 'Mate';
-    if (evalValue <= -10) return '-Mate';
-    return evalValue > 0 ? `+${evalValue.toFixed(2)}` : evalValue.toFixed(2);
-  };
+  // const formatStockfishEval = (evalValue) => {
+  //   if (evalValue === null) return '...';
+  //   if (evalValue >= 10) return 'Mate';
+  //   if (evalValue <= -10) return '-Mate';
+  //   return evalValue > 0 ? `+${evalValue.toFixed(2)}` : evalValue.toFixed(2);
+  // };
 
   // Start single player game
   const startSinglePlayerGame = async (numGames) => {
@@ -858,7 +858,7 @@ export default function GuessTheEval({ onBack }) {
                       </p>
                     </div>
                     
-                    {/* Stockfish Analysis */}
+                    {/* Stockfish Analysis
                     <div className="bg-purple-900 p-4 rounded-lg border-2 border-purple-700">
                       <div className="flex items-center justify-between mb-2">
                         <p className="text-lg text-purple-300 font-bold flex items-center gap-2">
@@ -901,7 +901,7 @@ export default function GuessTheEval({ onBack }) {
                           {stockfishLoading ? 'Analyzing position...' : 'Starting analysis...'}
                         </p>
                       )}
-                    </div>
+                    </div> */}
                     
                     {/* Player's Guess Results */}
                     {scores.length > 0 && scores[scores.length - 1].gameNum === currentGameNum && (
