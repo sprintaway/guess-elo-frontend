@@ -356,7 +356,7 @@ export default function GuessTheEval({ onBack }) {
     // Initialize Stockfish engine once
     if (!stockfishEngine) {
       
-      const engine = new Worker('/stockfish/stockfish-nnue-16-single.js');
+      const engine = new Worker('https://cdn.jsdelivr.net/npm/stockfish@16.0.0/src/stockfish-nnue-16-single.js');
 
       engine.onmessage = (event) => {
         const message = event.data;
