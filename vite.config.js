@@ -1,7 +1,7 @@
+// vite.config.js
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
-// https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
   publicDir: 'public',
@@ -10,17 +10,23 @@ export default defineConfig({
       output: {
         assetFileNames: (assetInfo) => {
           if (assetInfo.name && assetInfo.name.endsWith('.wasm')) {
-            return 'stockfish/[name][extname]'; // keep .wasm as-is
+            return 'stockfish/[name][extname]';
           }
-          return '[name].[hash][extname]';
+          return 'assets/[name].[hash][extname]';
         },
       },
     },
+    // Ensure WASM files aren't processed
+    assetsInlineLimit: 0,
   },
   server: {
     headers: {
       "Cross-Origin-Embedder-Policy": "require-corp",
       "Cross-Origin-Opener-Policy": "same-origin",
     },
+    fs: {
+      strict: false,
+    },
   },
-});
+  assetsInclude: ['**/*.wasm'],
+})
